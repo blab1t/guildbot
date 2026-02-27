@@ -17,6 +17,7 @@ channels:
   officer: "1461375582788128768"    # Officer chat only
   system: "1471639120202961007"     # System messages, DMs, joins/leaves, kicks etc.
   command: "1461375631643246734"
+  verify: "1471662772440797427"     # Channel for verify instructions and auto-cleanup
 
 # Toggles
 toggles:
@@ -143,8 +144,6 @@ role_sync:
       demote: false
       requirements: {}
 
-# Channel IDs (continued)
-channels:
-  verify: "1471662772440797427" # Channel where messages are auto-cleaned and verify instructions are sent
+
 
 

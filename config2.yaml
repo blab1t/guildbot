@@ -17,6 +17,7 @@ channels:
   officer: "1454942744274403441"    # Officer chat only
   system: "1454942744274403441"     # System messages, DMs, joins/leaves, kicks etc.
   command: "1454942744274403441"
+  verify: ""
 
 # Toggles
 toggles:
@@ -141,8 +142,6 @@ role_sync:
       demote: false
       requirements: {}
 
-# Channel IDs (continued)
-channels:
-  verify: ""
+
 
 
