@@ -221,9 +221,11 @@ export function startRoleSync(discordClient: Client) {
 }
 
 async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, totalExp: number, joined: number, ign: string }, rankMappings: any[], hypixelPlayer: any) {
+    if (!hypixelPlayer?.displayname) return; // Can't resolve IGN, skip
+    const playerIGN = hypixelPlayer.displayname;
     const currentRank = guildInfo.rank;
     const { getPlayerRank } = await import('./hypixel');
-    const hRank = getPlayerRank(hypixelPlayer); // e.word [MVP+]
+    const hRank = getPlayerRank(hypixelPlayer); // e.g. [MVP+]
 
     const meetsRequirements = (reqs: any) => {
         if (!reqs) return true;
@@ -260,8 +262,8 @@ async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, tota
     }
 
     if (targetRankName && targetRankName.toLowerCase() !== currentRank.toLowerCase()) {
-        console.log(`[AutoRank] Promoting ${guildInfo.ign} to ${targetRankName}`);
-        mcClient.send(`/g setrank ${guildInfo.ign} ${targetRankName}`, false);
+        console.log(`[AutoRank] Promoting ${playerIGN} to ${targetRankName}`);
+        mcClient.send(`/g setrank ${playerIGN} ${targetRankName}`, false);
         return; // Only one change per sync
     }
 
@@ -279,8 +281,8 @@ async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, tota
         }
 
         if (demoteTo) {
-            console.log(`[AutoRank] Demoting ${guildInfo.ign} to ${demoteTo}`);
-            mcClient.send(`/g setrank ${guildInfo.ign} ${demoteTo}`, false);
+            console.log(`[AutoRank] Demoting ${playerIGN} to ${demoteTo}`);
+            mcClient.send(`/g setrank ${playerIGN} ${demoteTo}`, false);
         }
     }
 }
