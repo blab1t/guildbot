@@ -6,62 +6,71 @@ import { hasPermission } from '../../utils/permissions';
 export const adminCommands = [
     {
         data: new SlashCommandBuilder()
-            .setName('guild invite')
-            .setDescription('Invites a player to the guild')
-            .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true)),
+            .setName('guild')
+            .setDescription('Guild administration commands')
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('invite')
+                    .setDescription('Invites a player to the guild')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('kick')
+                    .setDescription('Kicks a player from the guild')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+                    .addStringOption(option => option.setName('reason').setDescription('Reason').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('mute')
+                    .setDescription('Mutes a player in guild chat')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+                    .addStringOption(option => option.setName('time').setDescription('Duration (e.g. 1h, 1d)').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('unmute')
+                    .setDescription('Unmutes a player in guild chat')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+            ),
         async execute(interaction: ChatInputCommandInteraction) {
-            if (!hasPermission(interaction.user.id, 'invite')) {
-                return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
-            }
+            const subcommand = interaction.options.getSubcommand();
             const ign = interaction.options.getString('ign');
-            mcClient.send(`/g invite ${ign}`, false);
-            interaction.reply({ content: `Sent invite to ${ign}.`, ephemeral: true });
-        }
-    },
-    {
-        data: new SlashCommandBuilder()
-            .setName('guild kick')
-            .setDescription('Kicks a player from the guild')
-            .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
-            .addStringOption(option => option.setName('reason').setDescription('Reason').setRequired(true)),
-        async execute(interaction: ChatInputCommandInteraction) {
-            if (!hasPermission(interaction.user.id, 'kick')) {
-                return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+
+            if (subcommand === 'invite') {
+                if (!hasPermission(interaction.user.id, 'invite')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+                }
+                mcClient.send(`/g invite ${ign}`, false);
+                return interaction.reply({ content: `Sent invite to ${ign}.`, ephemeral: true });
             }
-            const ign = interaction.options.getString('ign');
-            const reason = interaction.options.getString('reason');
-            mcClient.send(`/g kick ${ign} ${reason}`, false);
-            interaction.reply({ content: `Kicked ${ign} for: ${reason}.`, ephemeral: true });
-        }
-    },
-    {
-        data: new SlashCommandBuilder()
-            .setName('guild mute')
-            .setDescription('Mutes a player in guild chat')
-            .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
-            .addStringOption(option => option.setName('time').setDescription('Duration (e.g. 1h, 1d)').setRequired(true)),
-        async execute(interaction: ChatInputCommandInteraction) {
-            if (!hasPermission(interaction.user.id, 'mute')) {
-                return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+
+            if (subcommand === 'kick') {
+                if (!hasPermission(interaction.user.id, 'kick')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+                }
+                const reason = interaction.options.getString('reason');
+                mcClient.send(`/g kick ${ign} ${reason}`, false);
+                return interaction.reply({ content: `Kicked ${ign} for: ${reason}.`, ephemeral: true });
             }
-            const ign = interaction.options.getString('ign');
-            const time = interaction.options.getString('time');
-            mcClient.send(`/g mute ${ign} ${time}`, false);
-            interaction.reply({ content: `Muted ${ign} for ${time}.`, ephemeral: true });
-        }
-    },
-    {
-        data: new SlashCommandBuilder()
-            .setName('guild unmute')
-            .setDescription('Unmutes a player in guild chat')
-            .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true)),
-        async execute(interaction: ChatInputCommandInteraction) {
-            if (!hasPermission(interaction.user.id, 'mute')) {
-                return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+
+            if (subcommand === 'mute') {
+                if (!hasPermission(interaction.user.id, 'mute')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+                }
+                const time = interaction.options.getString('time');
+                mcClient.send(`/g mute ${ign} ${time}`, false);
+                return interaction.reply({ content: `Muted ${ign} for ${time}.`, ephemeral: true });
             }
-            const ign = interaction.options.getString('ign');
-            mcClient.send(`/g unmute ${ign}`, false);
-            interaction.reply({ content: `Unmuted ${ign}.`, ephemeral: true });
+
+            if (subcommand === 'unmute') {
+                if (!hasPermission(interaction.user.id, 'mute')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+                }
+                mcClient.send(`/g unmute ${ign}`, false);
+                return interaction.reply({ content: `Unmuted ${ign}.`, ephemeral: true });
+            }
         }
     }
 ];
