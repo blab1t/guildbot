@@ -118,25 +118,31 @@ export async function syncRoles(discordClient: Client) {
                 );
                 const correctRoleId = correctMapping?.discord_role;
 
-                // Handle rank roles (always remove others even if current rank is unmapped)
-                for (const roleId of allRankRoleIds) {
-                    if (!roleId) continue;
-                    if (roleId === correctRoleId) {
-                        if (!discordMember.roles.cache.has(roleId)) {
-                            try {
-                                await discordMember.roles.add(roleId);
-                                console.log(`[RoleSync] Added rank role for ${discordMember.user.tag} (${guildRank})`);
-                            } catch (e: any) {
-                                console.error(`[RoleSync] Failed to add role ${roleId}: ${e.message}`);
+                // Handle rank roles
+                // Only swap roles if the current rank is actually mapped in the config
+                // If the rank is unmapped (e.g. custom officer ranks), don't touch roles
+                if (correctMapping) {
+                    for (const roleId of allRankRoleIds) {
+                        if (!roleId) continue;
+                        // NEVER remove the guild_member_role during rank swaps
+                        if (roleId === memberRoleId) continue;
+                        if (roleId === correctRoleId) {
+                            if (!discordMember.roles.cache.has(roleId)) {
+                                try {
+                                    await discordMember.roles.add(roleId);
+                                    console.log(`[RoleSync] Added rank role for ${discordMember.user.tag} (${guildRank})`);
+                                } catch (e: any) {
+                                    console.error(`[RoleSync] Failed to add role ${roleId}: ${e.message}`);
+                                }
                             }
-                        }
-                    } else {
-                        if (discordMember.roles.cache.has(roleId)) {
-                            try {
-                                await discordMember.roles.remove(roleId);
-                                console.log(`[RoleSync] Removed old rank role from ${discordMember.user.tag}`);
-                            } catch (e: any) {
-                                console.error(`[RoleSync] Failed to remove role ${roleId}: ${e.message}`);
+                        } else {
+                            if (discordMember.roles.cache.has(roleId)) {
+                                try {
+                                    await discordMember.roles.remove(roleId);
+                                    console.log(`[RoleSync] Removed old rank role from ${discordMember.user.tag}`);
+                                } catch (e: any) {
+                                    console.error(`[RoleSync] Failed to remove role ${roleId}: ${e.message}`);
+                                }
                             }
                         }
                     }
