@@ -101,7 +101,9 @@ export class MinecraftClient extends EventEmitter {
 
     public send(message: string, useSuffix: boolean = true) {
         try {
-            if (this.bot && (this.bot as any).entity && (this.bot as any)._client && typeof this.bot.chat === 'function') {
+            // Stricter check: must be logged in, have a client, and the client must be in 'play' state
+            const client = (this.bot as any)?._client;
+            if (this.bot && client && client.state === 'play' && typeof this.bot.chat === 'function') {
                 const finalMsg = useSuffix ? message + getStringSuffix() : message;
                 console.log(`\x1b[33m[MC OUTGOING] ${finalMsg}\x1b[0m`);
                 this.bot.chat(finalMsg);

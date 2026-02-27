@@ -99,12 +99,16 @@ export async function syncRoles(discordClient: Client) {
                     }
                 }
 
-                // 2. Add guild member role
-                if (memberRoleId && !discordMember.roles.cache.has(memberRoleId)) {
-                    try {
-                        await discordMember.roles.add(memberRoleId);
-                    } catch (e: any) {
-                        console.error(`[RoleSync] Failed to add member role to ${discordMember.user.tag}: ${e.message}`);
+                // 2. Add guild member role (strictly enforce)
+                if (memberRoleId) {
+                    const hasMemberRole = discordMember.roles.cache.has(memberRoleId);
+                    if (!hasMemberRole) {
+                        try {
+                            await discordMember.roles.add(memberRoleId);
+                            console.log(`[RoleSync] Added missing member role to ${discordMember.user.tag}`);
+                        } catch (e: any) {
+                            console.error(`[RoleSync] Failed to add member role to ${discordMember.user.tag}: ${e.message}`);
+                        }
                     }
                 }
 
