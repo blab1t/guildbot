@@ -151,7 +151,7 @@ export async function syncRoles(discordClient: Client) {
                 // 4. Auto Promotion / Demotion Logic
                 try {
                     const player = await getPlayer(uuid);
-                    await handleAutoRank(guildInfo, rankMappings, player);
+                    await handleAutoRank(guildInfo, rankMappings, player, guild);
 
                     // 5. Nickname sync — set Discord nickname to MC IGN
                     if (config.role_sync.nickname_sync) {
@@ -226,60 +226,95 @@ export function startRoleSync(discordClient: Client) {
     setInterval(() => syncRoles(discordClient), 5 * 60 * 1000);
 }
 
-async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, totalExp: number, joined: number, ign: string }, rankMappings: any[], hypixelPlayer: any) {
+async function handleAutoRank(
+    guildInfo: { rank: string, weeklyExp: number, totalExp: number, joined: number, ign: string },
+    rankMappings: any[],
+    hypixelPlayer: any,
+    guildData: any
+) {
     if (!hypixelPlayer?.displayname) return; // Can't resolve IGN, skip
     const playerIGN = hypixelPlayer.displayname;
     const currentRank = guildInfo.rank;
     const { getPlayerRank } = await import('./hypixel');
     const hRank = getPlayerRank(hypixelPlayer); // e.g. [MVP+]
 
-    const meetsRequirements = (reqs: any) => {
-        if (!reqs) return true;
-
-        // Weekly GEXP
-        if (reqs.weekly_gexp !== undefined && guildInfo.weeklyExp < reqs.weekly_gexp) return false;
-
-        // Lifetime GEXP
-        if (reqs.lifetime_gexp !== undefined && guildInfo.totalExp < reqs.lifetime_gexp) return false;
-
-        // Time in Guild
-        if (reqs.time_in_guild) {
-            const timeMs = parseTime(reqs.time_in_guild);
-            const joinedAt = guildInfo.joined;
-            if (Date.now() - joinedAt < timeMs) return false;
-        }
-
-        // Hypixel Rank
-        if (reqs.hypixel_rank) {
-            // Very simple contains check for rank name
-            if (!hRank.toLowerCase().includes(reqs.hypixel_rank.toLowerCase())) return false;
-        }
-
-        return true;
-    };
-
-    // Auto-Promotion
-    // Find highest rank they qualify for
-    let targetRankName: string | null = null;
-    for (const mapping of rankMappings) {
-        if (mapping.promote && meetsRequirements(mapping.requirements)) {
-            targetRankName = mapping.guild_rank;
+    // --- Bot rank check ---
+    // Find the bot in the guild and get its rank priority
+    // Only touch players whose rank priority is LOWER than the bot's
+    const guildRanks: { name: string, priority: number }[] = guildData.ranks || [];
+    const botUsername = mcClient.bot?.username;
+    let botRankPriority = 0;
+    if (botUsername) {
+        // Find bot's member entry by checking all members' UUIDs against the bot
+        for (const member of guildData.members) {
+            // We can't match by username directly from guild data, so we use mcClient's UUID
+            const botUuid = (mcClient.bot as any)?._client?.uuid?.replace(/-/g, '');
+            const memberUuid = member.uuid.replace(/-/g, '');
+            if (botUuid && memberUuid === botUuid) {
+                const botRankInfo = guildRanks.find(r => r.name.toLowerCase() === member.rank.toLowerCase());
+                botRankPriority = botRankInfo?.priority || 0;
+                break;
+            }
         }
     }
 
-    if (targetRankName && targetRankName.toLowerCase() !== currentRank.toLowerCase()) {
-        console.log(`[AutoRank] Promoting ${playerIGN} to ${targetRankName}`);
+    // Get the player's rank priority from guild.ranks
+    const playerRankInfo = guildRanks.find(r => r.name.toLowerCase() === currentRank.toLowerCase());
+    const playerRankPriority = playerRankInfo?.priority || 0;
+
+    // Skip if the player's rank is >= bot's rank (bot can't change them)
+    if (botRankPriority > 0 && playerRankPriority >= botRankPriority) {
+        return;
+    }
+
+    // --- Requirement checker ---
+    const meetsRequirements = (reqs: any) => {
+        if (!reqs) return true;
+        if (reqs.weekly_gexp !== undefined && guildInfo.weeklyExp < reqs.weekly_gexp) return false;
+        if (reqs.lifetime_gexp !== undefined && guildInfo.totalExp < reqs.lifetime_gexp) return false;
+        if (reqs.time_in_guild) {
+            const timeMs = parseTime(reqs.time_in_guild);
+            if (Date.now() - guildInfo.joined < timeMs) return false;
+        }
+        if (reqs.hypixel_rank) {
+            if (!hRank.toLowerCase().includes(reqs.hypixel_rank.toLowerCase())) return false;
+        }
+        return true;
+    };
+
+    // --- Find current rank's index in the config ---
+    const currentIndex = rankMappings.findIndex(
+        r => r.guild_rank.toLowerCase() === currentRank.toLowerCase()
+    );
+
+    // --- Auto-Promotion ---
+    // Find the highest rank they qualify for that is ABOVE their current rank
+    let targetRankName: string | null = null;
+    let targetIndex = -1;
+    for (let i = 0; i < rankMappings.length; i++) {
+        const mapping = rankMappings[i];
+        if (mapping.promote && meetsRequirements(mapping.requirements)) {
+            // Only consider ranks HIGHER than current (higher index = higher rank)
+            if (i > currentIndex) {
+                targetRankName = mapping.guild_rank;
+                targetIndex = i;
+            }
+        }
+    }
+
+    if (targetRankName && targetIndex > currentIndex) {
+        console.log(`[AutoRank] Promoting ${playerIGN} from ${currentRank} to ${targetRankName}`);
         mcClient.send(`/g setrank ${playerIGN} ${targetRankName}`, false);
         return; // Only one change per sync
     }
 
-    // Auto-Demotion
-    // If they don't meet requirements for their current rank and demote is true
-    const currentMapping = rankMappings.find(r => r.guild_rank.toLowerCase() === currentRank.toLowerCase());
+    // --- Auto-Demotion ---
+    // Only if current rank has demote: true AND player doesn't meet its requirements
+    const currentMapping = currentIndex >= 0 ? rankMappings[currentIndex] : null;
     if (currentMapping && currentMapping.demote && !meetsRequirements(currentMapping.requirements)) {
-        // Find the next lowest rank they DO qualify for
+        // Find the highest rank BELOW current that they DO qualify for
         let demoteTo: string | null = null;
-        for (let i = rankMappings.indexOf(currentMapping) - 1; i >= 0; i--) {
+        for (let i = currentIndex - 1; i >= 0; i--) {
             if (meetsRequirements(rankMappings[i].requirements)) {
                 demoteTo = rankMappings[i].guild_rank;
                 break;
@@ -287,7 +322,7 @@ async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, tota
         }
 
         if (demoteTo) {
-            console.log(`[AutoRank] Demoting ${playerIGN} to ${demoteTo}`);
+            console.log(`[AutoRank] Demoting ${playerIGN} from ${currentRank} to ${demoteTo}`);
             mcClient.send(`/g setrank ${playerIGN} ${demoteTo}`, false);
         }
     }
