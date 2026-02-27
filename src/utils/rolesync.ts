@@ -257,7 +257,7 @@ async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, tota
 
     if (targetRankName && targetRankName.toLowerCase() !== currentRank.toLowerCase()) {
         console.log(`[AutoRank] Promoting ${guildInfo.ign} to ${targetRankName}`);
-        mcClient.send(`/g setrank ${guildInfo.ign} ${targetRankName}`);
+        mcClient.send(`/g setrank ${guildInfo.ign} ${targetRankName}`, false);
         return; // Only one change per sync
     }
 
@@ -276,7 +276,7 @@ async function handleAutoRank(guildInfo: { rank: string, weeklyExp: number, tota
 
         if (demoteTo) {
             console.log(`[AutoRank] Demoting ${guildInfo.ign} to ${demoteTo}`);
-            mcClient.send(`/g setrank ${guildInfo.ign} ${demoteTo}`);
+            mcClient.send(`/g setrank ${guildInfo.ign} ${demoteTo}`, false);
         }
     }
 }

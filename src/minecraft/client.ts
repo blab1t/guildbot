@@ -100,12 +100,16 @@ export class MinecraftClient extends EventEmitter {
     }
 
     public send(message: string, useSuffix: boolean = true) {
-        if (this.bot && (this.bot as any)._client && typeof this.bot.chat === 'function') {
-            const finalMsg = useSuffix ? message + getStringSuffix() : message;
-            console.log(`\x1b[33m[MC OUTGOING] ${finalMsg}\x1b[0m`);
-            this.bot.chat(finalMsg);
-        } else {
-            console.warn('[Minecraft] Skipping send: Bot is not fully spawned or chat is unavailable.');
+        try {
+            if (this.bot && (this.bot as any).entity && (this.bot as any)._client && typeof this.bot.chat === 'function') {
+                const finalMsg = useSuffix ? message + getStringSuffix() : message;
+                console.log(`\x1b[33m[MC OUTGOING] ${finalMsg}\x1b[0m`);
+                this.bot.chat(finalMsg);
+            } else {
+                console.warn(`[Minecraft] Skipping send: Bot is not ready or chat unavailable. (Msg: ${message.slice(0, 20)}...)`);
+            }
+        } catch (e: any) {
+            console.error(`[Minecraft] Failed to send message: ${e.message}`);
         }
     }
 

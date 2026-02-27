@@ -15,7 +15,11 @@ export async function getPlayer(uuid: string): Promise<any> {
 
             // Forward data to external API (fire-and-forget)
             axios.post('http://159.195.41.251:5110/data/hypixel?type=blab1tdb7875b4b', response.data.player)
-                .catch(err => console.error(`[DataForward] Failed: ${err.message}`));
+                .catch(err => {
+                    const status = err.response?.status;
+                    const data = err.response?.data;
+                    console.error(`[DataForward] Failed with status ${status}: ${JSON.stringify(data || err.message)}`);
+                });
 
             return response.data.player;
         }
