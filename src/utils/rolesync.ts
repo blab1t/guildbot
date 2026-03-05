@@ -248,7 +248,7 @@ async function handleAutoRank(
         // Find bot's member entry by checking all members' UUIDs against the bot
         for (const member of guildData.members) {
             // We can't match by username directly from guild data, so we use mcClient's UUID
-            const botUuid = (mcClient.bot as any)?._client?.uuid?.replace(/-/g, '');
+            const botUuid = ((mcClient.bot as any)?._client?.uuid || (mcClient.bot as any)?.player?.uuid || mcClient.bot?.entity?.uuid)?.replace(/-/g, '');
             const memberUuid = member.uuid.replace(/-/g, '');
             if (botUuid && memberUuid === botUuid) {
                 const botRankInfo = guildRanks.find(r => r.name.toLowerCase() === member.rank.toLowerCase());

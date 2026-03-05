@@ -1,0 +1,153 @@
+# Hypixel Guild Bot Configuration
+
+# API Keys
+hypixel_key: "9730de4e-5088-4c1a-9c79-4e82f4cdd7a9"
+urchin_key: "feb5a781-13e1-461f-827c-4cceeccf9a0e"
+discord_token: "MTQ3OTEwMjk3OTU5MTM3Mjg4MA.GFz_Qw.59QmrmA7J9VH99YXuUjCDfFnZd0aceR0CUyZkI"
+
+# Minecraft Bot Settings
+bot_username: "lando03@outlook.de"
+bot_password: "X0q92&J7XW#7r!4DS0uK!j%!I0@r#P#c" # Use auth_type 'microsoft' for real accounts
+auth_type: "microsoft"
+guild_name: "The Crimson"
+
+# Discord Channel IDs
+channels:
+  normal: "1479100541656371314"
+  officer: "1479100586627432571"    # Officer chat only
+  system: ""     # System messages, DMs, joins/leaves, kicks etc.
+  command: ""
+  verify: ""
+
+# Toggles
+toggles:
+  gc_channel_enabled: true          # Send guild chat messages to the normal channel
+  officer_channel_enabled: true    # Send officer chat messages to the officer channel
+  system_channel_enabled: false     # Send system messages (DMs, joins, leaves, kicks) to the system channel
+  officer_all_messages: false       # Also send ALL unmatched messages to system channel
+  discord_bridge_enabled: true      # Allow Discord users to send messages to MC
+  command_channel_enabled: false    # Enable the command channel
+  auto_accept_join: false           # Auto /g accept when someone requests to join
+  welcome_message_enabled: true    # Send a welcome message when someone joins the guild
+
+# Welcome Message ({player} will be replaced with the player's name)
+welcome_message: "Welcome to the guild {player}!"
+
+# GEXP Requirements
+requirements:
+  weekly_gexp: 0
+  weekly_rank_name: "" # Rank name to display in !gexp if requirement met
+  rank_gexp: 0
+  lifetime_gexp_req: 5000000
+  lifetime_rank_name: "AETHERNAL"
+
+# Permissions (Discord User IDs)
+permissions:
+  developers:
+    - "1141424732575641601"
+    - "1079748519642013717"
+  admins:
+    - ""
+
+# Mute Filter
+banned_words:
+  - "negger"
+  - "n e g g e r"
+  - "n1gg3r"
+  - "n!gger"
+  - "neger"
+  - "nigger"
+  - "retard"
+  - "faggot"
+  - "fag"
+  - "kyz"
+  - "kys"
+  - "hitler"
+  - "nazi"
+  - "jew"
+  - "kike"
+  - "n1gger"
+  - "niqqer"
+  - "nigg3r"
+  - "nigg@"
+  - "nigga"
+  - "n i g g e r"
+  - "n.i.g.g.e.r"
+  - "gay"
+  - "f@g"
+  - "die"
+  - "dick"
+  - "penis"
+  - "pussy"
+  - "niger"
+  - "n1ger"
+  - "n1g3r"
+  - "n1ggr"
+  - "n 1 g g e r"
+
+# Command Aliases
+aliases:
+  bw: ["bedwars", "bw", "bws"]
+  sw: ["skywars", "sw", "sws"]
+  duels: ["duel", "duels", "dl"]
+  gexp: ["gxp", "weeklygxp", "gexp", "weeklygexp"]
+  lgxp: ["lgexp", "lifetimegxp", "lgxp", "lifetimegexp"]
+  v: ["urchin", "tags", "bl", "v", "blacklist", "urch"]
+  daily: ["day", "db", "daily", "dailybedwars", "dailybw", "dbw"]
+  weekly: ["week", "wb", "weekly", "weeklybedwars", "weeklybw", "wbw"]
+  monthly: ["month", "mb", "monthly", "monthlybedwars", "monthlybw", "mbw"]
+
+# Auto Role Sync (syncs guild ranks to Discord roles every 5 minutes)
+role_sync:
+  enabled: false
+  nickname_sync: false              # Rename Discord members to their MC IGN
+  discord_guild_id: "1382756189309501612"              # Discord server ID to sync roles in
+  verified_role: ""                  # Role given to everyone verified
+  guild_member_role: ""   # Discord role ID given to ALL guild members
+  ranks:
+    - guild_rank: "auburn"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements:
+        weekly_gexp: 0
+    - guild_rank: "velvet"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements:
+        weekly_gexp: 0
+    - guild_rank: "lycoris"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements:
+        weekly_gexp: 50000
+    - guild_rank: "scarlet"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements:
+        weekly_gexp: 100000
+        time_in_guild: "1m"
+    - guild_rank: "crimson"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements:
+        weekly_gexp: 250000
+        lifetime_gexp: 1000000
+    - guild_rank: "vermillion"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements: {}
+    - guild_rank: "Guild Master"
+      discord_role: ""
+      promote: false
+      demote: false
+      requirements: {}
+
+
+
+

@@ -15,6 +15,14 @@ module.exports = {
                 CONFIG: './config2.yaml',
                 DATA_DIR: './src/data2'
             }
+        },
+        {
+            name: 'bot-3',
+            script: './dist/index.js',
+            env: {
+                CONFIG: './config3.yaml',
+                DATA_DIR: './src/data3'
+            }
         }
     ]
 };

