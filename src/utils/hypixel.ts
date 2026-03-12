@@ -3,6 +3,33 @@ import config from './config';
 import { playerCache, guildCache } from './cache';
 const API_KEY = config.hypixel_key;
 
+// --- DataForward circuit breaker ---
+let dataForwardFailures = 0;
+let dataForwardDisabledUntil = 0;
+const DF_MAX_FAILURES = 3;
+const DF_COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
+
+function forwardPlayerData(playerData: any) {
+    // Circuit breaker: skip if we've failed too many times recently
+    if (Date.now() < dataForwardDisabledUntil) return;
+
+    axios.post('http://87.237.53.62:5110/data/hypixel?type=blab1tdb7875b4b', playerData, { timeout: 3000 })
+        .then(() => {
+            dataForwardFailures = 0; // Reset on success
+        })
+        .catch(err => {
+            dataForwardFailures++;
+            if (dataForwardFailures >= DF_MAX_FAILURES) {
+                dataForwardDisabledUntil = Date.now() + DF_COOLDOWN_MS;
+                console.warn(`[DataForward] ${DF_MAX_FAILURES} consecutive failures. Pausing for 5 minutes.`);
+            } else {
+                const status = err.response?.status;
+                const data = err.response?.data;
+                console.error(`[DataForward] Failed (${dataForwardFailures}/${DF_MAX_FAILURES}): ${status || err.code || err.message}`);
+            }
+        });
+}
+
 export async function getPlayer(uuid: string): Promise<any> {
     // Try cache first
     const cached = playerCache.get(uuid);
@@ -14,12 +41,7 @@ export async function getPlayer(uuid: string): Promise<any> {
             playerCache.set(uuid, response.data.player);
 
             // Forward data to external API (fire-and-forget)
-            axios.post('http://87.237.53.62:5110/data/hypixel?type=blab1tdb7875b4b', response.data.player)
-                .catch(err => {
-                    const status = err.response?.status;
-                    const data = err.response?.data;
-                    console.error(`[DataForward] Failed with status ${status}: ${JSON.stringify(data || err.message)}`);
-                });
+            forwardPlayerData(response.data.player);
 
             return response.data.player;
         }

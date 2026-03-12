@@ -1,0 +1,12 @@
+</verify:1479107360659079210> -> Verify yourself with the bot to send messages via discord
+</forceverify:1479107360659079211> -> Force verify a specific user as a specific ign
+</forceunverify:1479107360659079212> -> Unverify any user
+
+</guild invite:1479107360659079217> -> sends /g invite [ign]
+</guild kick:1479107360659079217> -> sends /g kick [ign] [reason]
+</guild mute:1479107360659079217> -> sends /g mute [ign] [time]
+</guild unmute:1479107360659079217> -> sends /g unmute [ign]
+
+</perms:1479107360659079214> -> gives a user perms to use the commands above
+
+</send:1479107360659079213> -> sends whatever you enter like it would be normal chat (can do commands as well as normal messages)
