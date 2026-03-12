@@ -1,24 +1,22 @@
 import { MinecraftCommand } from './types';
 import { mcClient } from '../client';
-import { getPlayer } from '../../utils/hypixel';
-import { getUrchinHistorical } from '../../utils/urchin';
+import { getUUID } from '../../utils/hypixel';
+import { getLunaHistorical } from '../../utils/luna';
 
 export const weeklyCommand: MinecraftCommand = {
     name: 'weekly',
     description: 'View weekly Bedwars stats',
     aliases: ['week', 'wb', 'weeklybw', 'wbw', 'wkly', 'wbws', 'weeklybws'],
     run: async (sender, targetIgn, args, uuid) => {
-        const player = await getPlayer(uuid!);
-        const targetIGNProper = player?.displayname || targetIgn;
-
-        const data = await getUrchinHistorical(targetIGNProper);
-        if (!data || !data.weekly || !data.weekly.data_available) {
-            mcClient.send(`/msg ${sender} No weekly data available for ${targetIGNProper}.`);
+        const data = await getLunaHistorical(uuid!);
+        if (!data || !data.weekly) {
+            mcClient.send(`/msg ${sender} No weekly data available for ${targetIgn}.`);
             return;
         }
 
-        const s = data.weekly;
-        const resp = `/msg ${sender} [${player.achievements?.bedwars_level.toLocaleString()}✫] ${targetIGNProper} [WEEKLY]: +${data.weekly.stars_gained.toFixed(2).toLocaleString()}✫ * Finals: ${data.weekly.final_kills.toLocaleString()} * FD: ${data.weekly.final_deaths.toLocaleString()} * FKDR: ${data.weekly.fkdr.toFixed(2).toLocaleString()} * Wins: ${data.weekly.wins.toLocaleString()} * Losses: ${data.weekly.losses.toLocaleString()} * WLR: ${data.weekly.wlr.toFixed(2).toLocaleString()} * KDR: ${data.weekly.kdr.toFixed(2).toLocaleString()} * BBLR: ${data.weekly.bblr.toFixed(2).toLocaleString()}`;
+        const d = data.weekly;
+        const stars = d.current_stars.toFixed(0);
+        const resp = `/msg ${sender} [${stars}✫] ${d.display_name} [WEEKLY]: +${d.stars_gained.toFixed(2)}✫ * Finals: ${d.final_kills} * FD: ${d.final_deaths} * FKDR: ${d.fkdr.toFixed(2)} * Wins: ${d.wins} * Losses: ${d.losses} * WLR: ${d.wlr.toFixed(2)} * KDR: ${d.kdr.toFixed(2)} * BBLR: ${d.bblr.toFixed(2)}`;
         mcClient.send(resp);
     }
 };

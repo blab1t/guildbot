@@ -2,6 +2,7 @@ import axios from 'axios';
 import config from './config';
 import { playerCache, guildCache } from './cache';
 const API_KEY = config.hypixel_key;
+const BLABIT_KEY = config.blabit_key;
 
 // --- DataForward circuit breaker ---
 let dataForwardFailures = 0;
@@ -36,12 +37,12 @@ export async function getPlayer(uuid: string): Promise<any> {
     if (cached) return cached;
 
     try {
-        const response = await axios.get(`https://api.hypixel.net/player?key=${API_KEY}&uuid=${uuid}`, { timeout: 5000 });
+        const response = await axios.get(`https://api.blabit.dev/refresh/player?key=${BLABIT_KEY}&uuid=${uuid}`, { timeout: 5000 });
         if (response.data.success && response.data.player) {
             playerCache.set(uuid, response.data.player);
 
             // Forward data to external API (fire-and-forget)
-            forwardPlayerData(response.data.player);
+            // forwardPlayerData(response.data.player);
 
             return response.data.player;
         }
