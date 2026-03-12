@@ -55,7 +55,10 @@ export interface HistoricalDiff {
 async function getLunaSnapshots(uuid: string): Promise<LunaSnapshot[] | null> {
     if (!LUNA_KEY) return null;
     try {
-        const response = await axios.get(`https://lunaaaa.net/api/v2/history/${uuid}?key=${LUNA_KEY}`, { timeout: 8000 });
+        // Format UUID with dashes: 73f00528-b2ea-4b93-a38f-96e7240460b3
+        const trimmed = uuid.replace(/-/g, '');
+        const formatted = `${trimmed.slice(0,8)}-${trimmed.slice(8,12)}-${trimmed.slice(12,16)}-${trimmed.slice(16,20)}-${trimmed.slice(20)}`;
+        const response = await axios.get(`https://lunaaaa.net/api/v2/history/${formatted}?key=${LUNA_KEY}`, { timeout: 8000 });
         return response.data?.snapshots || null;
     } catch (e: any) {
         console.error(`[Luna] Failed to fetch history for ${uuid}: ${e.message}`);
