@@ -9,6 +9,8 @@ import { verifyCommand, forceVerifyCommand, forceUnverifyCommand } from './comma
 import { sendCommand } from './commands/send';
 import { adminCommands, permsCommand } from './commands/admin';
 import { roleSyncCommand } from './commands/rolesync';
+import { banCommand } from './commands/ban';
+import { reconnectCommand } from './commands/reconnect';
 
 const commands = [
     verifyCommand,
@@ -17,6 +19,8 @@ const commands = [
     sendCommand,
     permsCommand,
     roleSyncCommand,
+    banCommand,
+    reconnectCommand,
     ...adminCommands
 ];
 
@@ -118,6 +122,86 @@ export class DiscordClient {
         mcClient.on('system', async (data) => {
             if (config.toggles.system_channel_enabled && config.toggles.officer_all_messages) {
                 this.sendToDiscord(config.channels.system, data.raw);
+            }
+        });
+
+        // Guild member join/leave events → forward to guild chat channel
+        mcClient.on('message', async (data: any) => {
+            const msg: string = data.message || '';
+            const raw: string = data.raw || '';
+
+            // Join: "[RANK] PlayerName joined the guild!"
+            if (msg.includes('joined the guild!') && !msg.startsWith('Guild >')) {
+                if (config.toggles.gc_channel_enabled) {
+                    this.sendToDiscord(config.channels.normal, raw);
+                }
+            }
+
+            // Leave: "[RANK] PlayerName left the guild!" or "was kicked from the guild"
+            if ((msg.includes('left the guild!') || msg.includes('was kicked from the Guild')) && !msg.startsWith('Guild >')) {
+                if (config.toggles.gc_channel_enabled) {
+                    this.sendToDiscord(config.channels.normal, raw);
+                }
+            }
+
+            // Duplicate message warning
+            if (msg.includes('You cannot say the same message twice!')) {
+                if (config.toggles.gc_channel_enabled) {
+                    this.sendToDiscord(config.channels.normal, raw);
+                }
+            }
+        });
+
+        // Blacklist alerts
+        mcClient.on('blacklistJoined', async (data: any) => {
+            const alertChannelId = config.channels?.blacklist_alert;
+            const staffRoleId = config.roles?.staff_role;
+            if (!alertChannelId) return;
+
+            try {
+                const channel = await this.client.channels.fetch(alertChannelId) as TextChannel;
+                const { EmbedBuilder, Colors } = await import('discord.js');
+                const embed = new EmbedBuilder()
+                    .setTitle('⚠️ Blacklisted Player Joined the Guild!')
+                    .setColor(Colors.Red)
+                    .addFields(
+                        { name: 'Player', value: data.playerName, inline: true },
+                        { name: 'Reason', value: data.entry.reason, inline: true },
+                        { name: 'Banned by', value: data.entry.bannedBy, inline: true },
+                        { name: 'Banned at', value: `<t:${Math.floor(new Date(data.entry.bannedAt).getTime() / 1000)}:R>`, inline: true }
+                    )
+                    .setTimestamp();
+
+                const content = staffRoleId ? `<@&${staffRoleId}>` : undefined;
+                await channel.send({ content, embeds: [embed] });
+            } catch (e) {
+                console.error('[Blacklist] Failed to send alert:', e);
+            }
+        });
+
+        mcClient.on('blacklistJoinRequest', async (data: any) => {
+            const alertChannelId = config.channels?.blacklist_alert;
+            const staffRoleId = config.roles?.staff_role;
+            if (!alertChannelId) return;
+
+            try {
+                const channel = await this.client.channels.fetch(alertChannelId) as TextChannel;
+                const { EmbedBuilder, Colors } = await import('discord.js');
+                const embed = new EmbedBuilder()
+                    .setTitle('🚫 Blacklisted Player Tried to Join!')
+                    .setDescription('Auto-accept was **blocked**.')
+                    .setColor(Colors.Orange)
+                    .addFields(
+                        { name: 'Player', value: data.playerName, inline: true },
+                        { name: 'Reason', value: data.entry.reason, inline: true },
+                        { name: 'Banned by', value: data.entry.bannedBy, inline: true }
+                    )
+                    .setTimestamp();
+
+                const content = staffRoleId ? `<@&${staffRoleId}>` : undefined;
+                await channel.send({ content, embeds: [embed] });
+            } catch (e) {
+                console.error('[Blacklist] Failed to send alert:', e);
             }
         });
 

@@ -33,6 +33,25 @@ export const adminCommands = [
                     .setName('unmute')
                     .setDescription('Unmutes a player in guild chat')
                     .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('promote')
+                    .setDescription('Promotes a player in the guild')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('demote')
+                    .setDescription('Demotes a player in the guild')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+            )
+            .addSubcommand(subcommand =>
+                subcommand
+                    .setName('setrank')
+                    .setDescription('Sets a player\'s rank in the guild')
+                    .addStringOption(option => option.setName('ign').setDescription('Minecraft username').setRequired(true))
+                    .addStringOption(option => option.setName('rank').setDescription('Guild rank name').setRequired(true))
             ),
         async execute(interaction: ChatInputCommandInteraction) {
             const subcommand = interaction.options.getSubcommand();
@@ -66,10 +85,35 @@ export const adminCommands = [
 
             if (subcommand === 'unmute') {
                 if (!hasPermission(interaction.user.id, 'mute')) {
-                    return interaction.reply({ content: 'You do not have permission to use this command!', ephemeral: true });
+                    return interaction.reply({ content: 'You do not have permission to use this command!', flags: 64 });
                 }
                 mcClient.send(`/g unmute ${ign}`, false);
-                return interaction.reply({ content: `Unmuted ${ign}.`, ephemeral: true });
+                return interaction.reply({ content: `Unmuted ${ign}.`, flags: 64 });
+            }
+
+            if (subcommand === 'promote') {
+                if (!hasPermission(interaction.user.id, 'kick')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', flags: 64 });
+                }
+                mcClient.send(`/g promote ${ign}`, false);
+                return interaction.reply({ content: `Promoted ${ign}.`, flags: 64 });
+            }
+
+            if (subcommand === 'demote') {
+                if (!hasPermission(interaction.user.id, 'kick')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', flags: 64 });
+                }
+                mcClient.send(`/g demote ${ign}`, false);
+                return interaction.reply({ content: `Demoted ${ign}.`, flags: 64 });
+            }
+
+            if (subcommand === 'setrank') {
+                if (!hasPermission(interaction.user.id, 'kick')) {
+                    return interaction.reply({ content: 'You do not have permission to use this command!', flags: 64 });
+                }
+                const rank = interaction.options.getString('rank');
+                mcClient.send(`/g setrank ${ign} ${rank}`, false);
+                return interaction.reply({ content: `Set ${ign}'s rank to ${rank}.`, flags: 64 });
             }
         }
     }

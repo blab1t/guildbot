@@ -148,10 +148,9 @@ export async function syncRoles(discordClient: Client) {
                     }
                 }
 
-                // 4. Auto Promotion / Demotion Logic
+                // 4. Auto Promotion / Demotion Logic for linked member
                 try {
                     const player = await getPlayer(uuid);
-                    await handleAutoRank(guildInfo, rankMappings, player, guild);
 
                     // 5. Nickname sync — set Discord nickname to MC IGN
                     if (config.role_sync.nickname_sync) {
@@ -205,13 +204,33 @@ export async function syncRoles(discordClient: Client) {
             }
         }
 
-        console.log(`[RoleSync] Sync completed. Synced: ${synced}, Skipped: ${skipped}`);
+        // --- AutoRank pass: runs for ALL guild members, regardless of Discord link ---
+        // This ensures promote/demote works even for members not verified on Discord.
+        let autoRanked = 0;
+        for (const member of guild.members) {
+            const uuid = member.uuid.replace(/-/g, '');
+            const guildInfo = guildMembers.get(uuid);
+            if (!guildInfo) continue;
+
+            try {
+                const player = await getPlayer(uuid);
+                if (player) {
+                    await handleAutoRank(guildInfo, rankMappings, player, guild);
+                    autoRanked++;
+                }
+            } catch (e: any) {
+                console.error(`[RoleSync] AutoRank error for ${guildInfo.ign}: ${e.message}`);
+            }
+        }
+
+        console.log(`[RoleSync] Sync completed. Synced: ${synced}, Skipped: ${skipped}, AutoRanked: ${autoRanked}`);
         return { synced, skipped };
     } catch (e: any) {
         console.error(`[RoleSync] Error: ${e.message || e}`);
         throw e;
     }
 }
+
 
 export function startRoleSync(discordClient: Client) {
     if (!config.role_sync?.enabled) {

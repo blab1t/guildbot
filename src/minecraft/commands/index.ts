@@ -9,6 +9,8 @@ import { helpCommand } from './help';
 import { dailyCommand } from './daily';
 import { weeklyCommand } from './weekly';
 import { monthlyCommand } from './monthly';
+import { bbCommand } from './bb';
+import { generalCommand } from './general';
 
 export const commands: MinecraftCommand[] = [
     bwCommand,
@@ -20,5 +22,7 @@ export const commands: MinecraftCommand[] = [
     dailyCommand,
     weeklyCommand,
     monthlyCommand,
+    bbCommand,
+    generalCommand,
     helpCommand
 ];

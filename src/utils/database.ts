@@ -63,3 +63,4 @@ export const LinkDB = new Database('links.json');
 export const StatsDB = new Database('stats.json');
 export const PermsDB = new Database('perms.json');
 export const GEXPDB = new Database('gexp.json');
+export const BlacklistDB = new Database('blacklist.json');

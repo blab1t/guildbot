@@ -2,6 +2,8 @@ import mineflayer from 'mineflayer';
 import { getStringSuffix } from '../utils/messaging';
 import EventEmitter from 'events';
 import config from '../utils/config';
+import { BlacklistDB } from '../utils/database';
+import { getUUID } from '../utils/hypixel';
 
 export class MinecraftClient extends EventEmitter {
     public bot!: mineflayer.Bot;
@@ -48,7 +50,7 @@ export class MinecraftClient extends EventEmitter {
             }, 3000);
         });
 
-        this.bot.on('message', (jsonMsg) => {
+        this.bot.on('message', async (jsonMsg) => {
             const ansi = jsonMsg.toAnsi();
             const message = jsonMsg.toString();
             const raw = jsonMsg.toMotd();
@@ -59,7 +61,7 @@ export class MinecraftClient extends EventEmitter {
             if (this.messageHistory.length > this.historyLimit) this.messageHistory.shift();
 
             this.emit('message', { message, raw, json: jsonMsg });
-            this.parseMessage(message, raw);
+            await this.parseMessage(message, raw);
         });
 
         this.bot.on('kicked', (reason) => {
@@ -115,7 +117,7 @@ export class MinecraftClient extends EventEmitter {
         }
     }
 
-    private parseMessage(message: string, raw: string) {
+    private async parseMessage(message: string, raw: string) {
         // Guild Chat
         if (message.startsWith('Guild >')) {
             this.emit('guildChat', { message, raw });
@@ -134,15 +136,21 @@ export class MinecraftClient extends EventEmitter {
 
             // Auto-accept if enabled
             if (config.toggles?.auto_accept_join) {
-                // Extract player name: pattern is "Click here to accept or type /guild accept <name>!"
-                // Or we can get it from the message line itself
                 const joinMatch = message.match(/(?:\[.+?\]\s+)?(\w+) has requested to join the Guild!/);
                 if (joinMatch && joinMatch[1]) {
                     const playerName = joinMatch[1];
-                    console.log(`[Minecraft] Auto-accepting guild join request from ${playerName}`);
-                    setTimeout(() => {
-                        this.send(`/g accept ${playerName}`, false);
-                    }, 1500);
+                    // Check blacklist before accepting
+                    const uuid = await getUUID(playerName).catch(() => null);
+                    if (uuid && BlacklistDB.has(uuid)) {
+                        const entry = BlacklistDB.get(uuid);
+                        console.log(`[Minecraft] Blocked auto-accept for blacklisted player: ${playerName}. Reason: ${entry.reason}`);
+                        this.emit('blacklistJoinRequest', { playerName, entry });
+                    } else {
+                        console.log(`[Minecraft] Auto-accepting guild join request from ${playerName}`);
+                        setTimeout(() => {
+                            this.send(`/g accept ${playerName}`, false);
+                        }, 1500);
+                    }
                 }
             }
         }
@@ -155,6 +163,13 @@ export class MinecraftClient extends EventEmitter {
                 const joinedMatch = message.match(/(?:\[.+?\]\s+)?(\w+) joined the guild!/);
                 if (joinedMatch && joinedMatch[1]) {
                     const playerName = joinedMatch[1];
+                    // Check blacklist and emit event for Discord alert
+                    const uuid = await getUUID(playerName).catch(() => null);
+                    if (uuid && BlacklistDB.has(uuid)) {
+                        const entry = BlacklistDB.get(uuid);
+                        console.log(`[Minecraft] Blacklisted player joined guild: ${playerName}. Reason: ${entry.reason}`);
+                        this.emit('blacklistJoined', { playerName, entry });
+                    }
                     const welcomeMsg = config.welcome_message.replace(/\{player\}/g, playerName);
                     console.log(`[Minecraft] Sending welcome message to ${playerName}`);
                     setTimeout(() => {
@@ -167,6 +182,14 @@ export class MinecraftClient extends EventEmitter {
         else {
             this.emit('system', { message, raw });
         }
+    }
+
+    public forceReconnect() {
+        console.log('[Minecraft] forceReconnect() called — triggering reconnect now.');
+        try { this.bot?.end('forceReconnect'); } catch (_) {}
+        this.isReconnecting = false;
+        this.reconnectDelay = 5000;
+        setTimeout(() => this.initBot(), 500);
     }
 }
 
