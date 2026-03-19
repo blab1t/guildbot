@@ -126,7 +126,7 @@ export class DiscordClient {
         });
 
         // Guild member join/leave/kick events → forward with dividers to guild chat channel
-        const DIVIDER_RAW = '&8-----------------------------------------------------';
+        const DIVIDER_RAW = '§8-----------------------------------------------------';
         mcClient.on('message', async (data: any) => {
             const msg: string = data.message || '';
             const raw: string = data.raw || '';

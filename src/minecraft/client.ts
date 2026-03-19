@@ -158,18 +158,20 @@ export class MinecraftClient extends EventEmitter {
         else if (message.includes('joined the guild!')) {
             this.emit('system', { message, raw });
 
-            // Auto welcome message if enabled
-            if (config.toggles?.welcome_message_enabled && config.welcome_message) {
-                const joinedMatch = message.match(/(?:\[.+?\]\s+)?(\w+) joined the guild!/);
-                if (joinedMatch && joinedMatch[1]) {
-                    const playerName = joinedMatch[1];
-                    // Check blacklist and emit event for Discord alert
-                    const uuid = await getUUID(playerName).catch(() => null);
-                    if (uuid && BlacklistDB.has(uuid)) {
-                        const entry = BlacklistDB.get(uuid);
-                        console.log(`[Minecraft] Blacklisted player joined guild: ${playerName}. Reason: ${entry.reason}`);
-                        this.emit('blacklistJoined', { playerName, entry });
-                    }
+            const joinedMatch = message.match(/(?:\[.+?\]\s+)?(\w+) joined the guild!/);
+            if (joinedMatch && joinedMatch[1]) {
+                const playerName = joinedMatch[1];
+
+                // Always check blacklist, regardless of welcome message toggle
+                const uuid = await getUUID(playerName).catch(() => null);
+                if (uuid && BlacklistDB.has(uuid)) {
+                    const entry = BlacklistDB.get(uuid);
+                    console.log(`[Minecraft] Blacklisted player joined guild: ${playerName}. Reason: ${entry.reason}`);
+                    this.emit('blacklistJoined', { playerName, entry });
+                }
+
+                // Send welcome message if enabled
+                if (config.toggles?.welcome_message_enabled && config.welcome_message) {
                     const welcomeMsg = config.welcome_message.replace(/\{player\}/g, playerName);
                     console.log(`[Minecraft] Sending welcome message to ${playerName}`);
                     setTimeout(() => {
