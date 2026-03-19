@@ -20,6 +20,7 @@ channels:
   system: ""     # System messages, DMs, joins/leaves, kicks etc.
   command: ""
   verify: ""
+  blacklist_alert: ""
 
 # Toggles
 toggles:

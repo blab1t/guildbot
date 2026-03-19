@@ -125,23 +125,23 @@ export class DiscordClient {
             }
         });
 
-        // Guild member join/leave events → forward to guild chat channel
+        // Guild member join/leave/kick events → forward with dividers to guild chat channel
+        const DIVIDER_RAW = '&8-----------------------------------------------------';
         mcClient.on('message', async (data: any) => {
             const msg: string = data.message || '';
             const raw: string = data.raw || '';
 
             // Join: "[RANK] PlayerName joined the guild!"
-            if (msg.includes('joined the guild!') && !msg.startsWith('Guild >')) {
-                if (config.toggles.gc_channel_enabled) {
-                    this.sendToDiscord(config.channels.normal, raw);
-                }
-            }
+            const isJoin = msg.includes('joined the guild!') && !msg.startsWith('Guild >');
+            // Leave: "[RANK] PlayerName left the guild!"
+            const isLeave = msg.includes('left the guild!') && !msg.startsWith('Guild >');
+            // Kicked from guild
+            const isKick = msg.includes('was kicked from the Guild') && !msg.startsWith('Guild >');
 
-            // Leave: "[RANK] PlayerName left the guild!" or "was kicked from the guild"
-            if ((msg.includes('left the guild!') || msg.includes('was kicked from the Guild')) && !msg.startsWith('Guild >')) {
-                if (config.toggles.gc_channel_enabled) {
-                    this.sendToDiscord(config.channels.normal, raw);
-                }
+            if ((isJoin || isLeave || isKick) && config.toggles.gc_channel_enabled) {
+                await this.sendToDiscord(config.channels.normal, DIVIDER_RAW);
+                await this.sendToDiscord(config.channels.normal, raw);
+                await this.sendToDiscord(config.channels.normal, DIVIDER_RAW);
             }
 
             // Duplicate message warning
@@ -285,9 +285,33 @@ export class DiscordClient {
                 }
 
                 message.delete().catch(() => { });
-            } else if (config.channels.verify && message.channelId === config.channels.verify) {
-                // Also clean up non-bot messages in verify channel even if not normal/officer
+            }
+
+            // Delete ALL messages in verify channel regardless of who sent it
+            if (config.channels.verify && message.channelId === config.channels.verify && !message.author.bot) {
                 message.delete().catch(() => { });
+            }
+        });
+
+        // Ping new Discord members in verify channel
+        this.client.on('guildMemberAdd', async (member) => {
+            const verifyChannelId = config.channels?.verify;
+            if (!verifyChannelId) return;
+
+            try {
+                const channel = await this.client.channels.fetch(verifyChannelId) as TextChannel;
+                if (!channel) return;
+
+                // Fetch /verify command ID for a clickable link
+                const guildCmds = await member.guild.commands.fetch();
+                const verifyCmd = guildCmds.find(c => c.name === 'verify');
+                const verifyMention = verifyCmd ? `</verify:${verifyCmd.id}>` : '`/verify`';
+
+                const msg = await channel.send(`${member} Welcome! Please run ${verifyMention} to link your Minecraft account and get your guild roles.`);
+                // Auto-delete after 30 seconds
+                setTimeout(() => msg.delete().catch(() => {}), 30000);
+            } catch (e) {
+                console.error('[VerifyChannel] Failed to ping new member:', e);
             }
         });
     }

@@ -20,6 +20,7 @@ channels:
   system: "1454942744274403441"     # System messages, DMs, joins/leaves, kicks etc.
   command: "1454942744274403441"
   verify: ""
+  blacklist_alert: ""
 
 # Toggles
 toggles:

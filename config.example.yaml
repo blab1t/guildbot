@@ -1,0 +1,122 @@
+# ============================================================
+#  Hypixel Guild Bot — Example Configuration
+#  Copy this to config.yaml (or config1/2/3.yaml for multi-bot)
+#  and fill in your own values.
+# ============================================================
+
+# ── API Keys ────────────────────────────────────────────────
+hypixel_key: "YOUR_HYPIXEL_API_KEY"           # https://developer.hypixel.net
+urchin_key:  "YOUR_URCHIN_KEY"                # https://urchin.gg
+blabit_key:  "YOUR_BLABIT_KEY"                # Internal stats cache key
+lunaaaa_key: "LunaAPI-XXXXXXXXXXXXXXXXXXXX"   # https://lunaaaa.net
+discord_token: "YOUR_DISCORD_BOT_TOKEN"       # Discord Developer Portal
+
+# ── Minecraft Bot ────────────────────────────────────────────
+bot_username: "yourbot@outlook.com"           # Microsoft/Mojang email
+bot_password: "YourBotPassword"               # Leave blank if using microsoft auth
+auth_type: "microsoft"                        # "microsoft" or "mojang"
+guild_name: "YourGuildName"                   # Exact Hypixel guild name
+
+# ── Discord Channel IDs ──────────────────────────────────────
+# Right-click a channel → Copy Channel ID (enable Developer Mode in Discord settings)
+channels:
+  normal:           "000000000000000000"   # Guild chat bridge channel
+  officer:          "000000000000000000"   # Officer chat bridge channel
+  system:           "000000000000000000"   # System messages (joins, leaves, DMs)
+  command:          "000000000000000000"   # Bot command channel
+  verify:           "000000000000000000"   # Verification channel (auto-cleaned)
+  blacklist_alert:  "000000000000000000"   # Where blacklist alerts are posted
+
+# ── Discord Role IDs ─────────────────────────────────────────
+# Right-click a role → Copy Role ID
+roles:
+  staff_role: "000000000000000000"          # Role pinged for blacklist alerts
+
+# ── Feature Toggles ─────────────────────────────────────────
+toggles:
+  gc_channel_enabled: true        # Forward guild chat to Discord
+  officer_channel_enabled: true   # Forward officer chat to Discord
+  system_channel_enabled: true    # Forward system messages to Discord
+  officer_all_messages: true      # Also catch unmatched system messages
+  discord_bridge_enabled: true    # Let Discord users send to guild chat
+  command_channel_enabled: true   # Enable the command channel
+  auto_accept_join: true          # Auto /g accept join requests (blacklist checked first)
+  welcome_message_enabled: true   # Send welcome message when a player joins
+
+# ── Welcome Message ──────────────────────────────────────────
+# {player} is replaced with the joining player's IGN
+welcome_message: "Welcome to the guild, {player}! Type !help in guild chat for commands. Discord: https://discord.gg/yourlink"
+
+# ── GEXP Requirements ────────────────────────────────────────
+requirements:
+  weekly_gexp: 25000              # Min weekly GEXP to be considered "active"
+  weekly_rank_name: "ACTIVE"      # Label shown in !gexp output
+  rank_gexp: 100000               # GEXP for rank promotion display
+  lifetime_gexp_req: 10000000     # Lifetime GEXP threshold
+  lifetime_rank_name: "VETERAN"   # Label for lifetime rank
+
+# ── Permissions ──────────────────────────────────────────────
+# Discord User IDs for each permission group
+permissions:
+  developers:
+    - "YOUR_DISCORD_USER_ID"      # Can use /reconnect and all commands
+  admins:
+    - "YOUR_DISCORD_USER_ID"      # Can use /perms to assign groups
+  invite:
+    - "YOUR_DISCORD_USER_ID"      # Can use /guild invite
+  kick:
+    - "YOUR_DISCORD_USER_ID"      # Can use /guild kick, promote, demote, setrank, /ban
+  mute:
+    - "YOUR_DISCORD_USER_ID"      # Can use /guild mute / unmute
+
+# ── Banned Words (blocked in Discord → MC bridge) ────────────
+banned_words:
+  - "badword1"
+  - "badword2"
+
+# ── Auto Role Sync ───────────────────────────────────────────
+# Syncs Hypixel guild ranks → Discord roles every 5 minutes.
+role_sync:
+  enabled: true
+  nickname_sync: true                          # Rename Discord members to MC IGN
+  discord_guild_id: "000000000000000000"       # Right-click your Discord server → Copy Server ID
+  verified_role:    "000000000000000000"       # Role given to all verified users
+  guild_member_role: "000000000000000000"      # Role given to all current guild members
+
+  # Each entry maps a Hypixel guild rank to a Discord role.
+  # promote/demote: whether bot should auto-promote/demote based on requirements.
+  # requirements are ALL checked — player must meet every listed one.
+  ranks:
+    - guild_rank: "Member"
+      discord_role: "000000000000000000"
+      promote: true
+      demote: true
+      requirements:
+        weekly_gexp: 0             # Min weekly GEXP to stay at this rank
+
+    - guild_rank: "Active"
+      discord_role: "000000000000000000"
+      promote: true
+      demote: true
+      requirements:
+        weekly_gexp: 50000         # Promote from Member if weekly GEXP ≥ 50k
+
+    - guild_rank: "Veteran"
+      discord_role: "000000000000000000"
+      promote: true
+      demote: false               # Never auto-demote Veterans
+      requirements:
+        time_in_guild: "6m"       # Must have been in guild for 6 months
+        lifetime_gexp: 500000     # AND have 500k lifetime GEXP
+
+    - guild_rank: "Staff"
+      discord_role: "000000000000000000"
+      promote: false              # Manual promotion only
+      demote: false
+      requirements: {}
+
+    - guild_rank: "Guild Master"
+      discord_role: "000000000000000000"
+      promote: false
+      demote: false
+      requirements: {}

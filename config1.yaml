@@ -11,7 +11,7 @@ lunaaaa_key: "LunaAPI-8a5a8c1f2916d724a433b52af7054bc6"
 bot_username: "lando09@outlook.de"
 bot_password: "yO*%^scVI4s&vYEr3^1z!QSFkt^b504i" # Use auth_type 'microsoft' for real accounts
 auth_type: "microsoft"
-guild_name: "HV0"
+guild_name: "Brilliant"
 
 # Discord Channel IDs
 channels:
@@ -38,7 +38,7 @@ welcome_message: "Welcome to the guild {player}! For guild commands you can send
 # GEXP Requirements
 requirements:
   weekly_gexp: 25000
-  weekly_rank_name: "ELITE" # Rank name to display in !gexp if requirement met
+  weekly_rank_name: "ACTIVE" # Rank name to display in !gexp if requirement met
   rank_gexp: 100000
   lifetime_gexp_req: 10000000
   lifetime_rank_name: "EFFECTIVE"
