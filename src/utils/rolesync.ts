@@ -4,6 +4,9 @@ import { LinkDB } from './database';
 import { Client, GuildMember } from 'discord.js';
 import { mcClient } from '../minecraft/client';
 
+// Track recent rank updates to prevent spamming /g setrank when Hypixel API is cached
+const recentRankUpdates = new Map<string, { targetRank: string, timestamp: number }>();
+
 /**
  * Syncs guild ranks to Discord roles.
  * Runs every 5 minutes when enabled.
@@ -322,8 +325,15 @@ async function handleAutoRank(
     }
 
     if (targetRankName && targetIndex > currentIndex) {
+        // Prevent redundant executions due to Hypixel API caching
+        const recent = recentRankUpdates.get(hypixelPlayer.uuid);
+        if (recent && recent.targetRank === targetRankName && (Date.now() - recent.timestamp) < 60 * 60 * 1000) {
+            return; // Already promoted in the last hour, wait for Hypixel cache to catch up
+        }
+
         console.log(`[AutoRank] Promoting ${playerIGN} from ${currentRank} to ${targetRankName}`);
         mcClient.send(`/g setrank ${playerIGN} ${targetRankName}`, false);
+        recentRankUpdates.set(hypixelPlayer.uuid, { targetRank: targetRankName, timestamp: Date.now() });
         return; // Only one change per sync
     }
 
@@ -341,8 +351,15 @@ async function handleAutoRank(
         }
 
         if (demoteTo) {
+            // Prevent redundant executions due to Hypixel API caching
+            const recent = recentRankUpdates.get(hypixelPlayer.uuid);
+            if (recent && recent.targetRank === demoteTo && (Date.now() - recent.timestamp) < 60 * 60 * 1000) {
+                return; // Already demoted in the last hour
+            }
+
             console.log(`[AutoRank] Demoting ${playerIGN} from ${currentRank} to ${demoteTo}`);
             mcClient.send(`/g setrank ${playerIGN} ${demoteTo}`, false);
+            recentRankUpdates.set(hypixelPlayer.uuid, { targetRank: demoteTo, timestamp: Date.now() });
         }
     }
 }

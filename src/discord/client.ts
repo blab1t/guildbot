@@ -11,6 +11,7 @@ import { adminCommands, permsCommand } from './commands/admin';
 import { roleSyncCommand } from './commands/rolesync';
 import { banCommand } from './commands/ban';
 import { reconnectCommand } from './commands/reconnect';
+import { statusCommand } from './commands/status';
 
 const commands = [
     verifyCommand,
@@ -21,6 +22,7 @@ const commands = [
     roleSyncCommand,
     banCommand,
     reconnectCommand,
+    statusCommand,
     ...adminCommands
 ];
 
@@ -126,7 +128,7 @@ export class DiscordClient {
         });
 
         // Guild member join/leave/kick events → forward with dividers to guild chat channel
-        const DIVIDER_RAW = '§8-----------------------------------------------------';
+        const DIVIDER_RAW = '§b------------------------------------------------';
         mcClient.on('message', async (data: any) => {
             const msg: string = data.message || '';
             const raw: string = data.raw || '';
