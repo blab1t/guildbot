@@ -1,10 +1,15 @@
 import { MinecraftCommand } from './types';
 import { mcClient } from '../client';
-import { getPlayer, getPlayerRank } from '../../utils/hypixel';
-import { getGuild } from '../../utils/hypixel';
+import { getPlayer, getPlayerRank, getGuildByPlayer } from '../../utils/hypixel';
 
-function getNetworkLevel(networkExp: number): number {
-    return Math.floor((Math.sqrt(networkExp + 88209) - 297) / 2.5) + 1;
+const BASE = 10_000;
+const GROWTH = 2_500;
+const REVERSE_PQ_PREFIX = -(BASE - 0.5 * GROWTH) / GROWTH;
+const REVERSE_CONST = REVERSE_PQ_PREFIX * REVERSE_PQ_PREFIX;
+const GROWTH_DIVIDES_2 = 2 / GROWTH;
+
+function getNetworkLevel(exp: number): number {
+    return exp < 0 ? 1 : Math.floor(1 + REVERSE_PQ_PREFIX + Math.sqrt(REVERSE_CONST + GROWTH_DIVIDES_2 * exp));
 }
 
 export const generalCommand: MinecraftCommand = {
@@ -24,13 +29,13 @@ export const generalCommand: MinecraftCommand = {
         const level = getNetworkLevel(player.networkExp || 0);
         const ap = (player.achievementPoints || 0).toLocaleString();
         const karma = (player.karma || 0).toLocaleString();
-        const streak = player.rewardStreak || player.totalDailyLoginStreak || 0;
-        const ranksGiven = player.ranksPurchased || player.PURCHASE_RANKS_GIVEN || 0;
+        const streak = player.rewardScore || player.rewardStreak || player.totalDailyLoginStreak || 0;
+        const ranksGiven = player.giftingMeta?.ranksGiven || player.ranksPurchased || player.PURCHASE_RANKS_GIVEN || 0;
 
-        // Fetch guild name
+        // Fetch guild name by UUID
         let guildName = 'None';
         try {
-            const guild = await getGuild(ign);
+            const guild = await getGuildByPlayer(uuid!);
             if (guild?.name) guildName = guild.name;
         } catch (_) { /* no guild */ }
 

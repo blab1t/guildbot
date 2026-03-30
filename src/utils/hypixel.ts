@@ -82,6 +82,27 @@ export async function getGuild(name: string): Promise<any> {
     }
 }
 
+export async function getGuildByPlayer(uuid: string): Promise<any> {
+    const cached = guildCache.get(uuid); // Using uuid as key in the same cache
+    if (cached) return cached;
+
+    try {
+        const response = await axios.get(`https://api.hypixel.net/guild?key=${API_KEY}&player=${uuid}`, { timeout: 5000 });
+        if (response.data.success && response.data.guild) {
+            guildCache.set(uuid, response.data.guild);
+            return response.data.guild;
+        }
+        return null;
+    } catch (e: any) {
+        if (e.response?.status === 429) {
+            const oldest = guildCache.getOldest(uuid);
+            if (oldest) return oldest;
+        }
+        console.error(`[Hypixel API] getGuildByPlayer error: ${e.message || e}`);
+        return null;
+    }
+}
+
 export async function getUUID(ign: string): Promise<string | null> {
     try {
         const response = await axios.get(`https://api.mojang.com/users/profiles/minecraft/${ign}`, { timeout: 5000 });
