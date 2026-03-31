@@ -10,6 +10,7 @@ import {
 } from 'discord.js';
 import { getGuild } from '../../utils/hypixel';
 import { GEXPDB } from '../../utils/database';
+import { playerCache } from '../../utils/cache';
 import config from '../../utils/config';
 
 const PAGE_SIZE = 10;
@@ -85,26 +86,33 @@ export const leaderboardCommand = {
 
         if (sub === 'weekly') {
             for (const member of guild.members) {
+                const uuid = member.uuid.replace(/-/g, '');
+                const cached = playerCache.getOldest(uuid);
+                const ign = cached?.displayname || uuid;
                 const weekly = Object.values(member.expHistory || {})
                     .reduce((a: number, b: any) => a + (Number(b) || 0), 0);
-                members.push({ ign: member.name || member.uuid, value: weekly });
+                members.push({ ign, value: weekly });
             }
         } else {
-            // lifetime
-            const uuid2ign = new Map<string, string>();
-            for (const member of guild.members) {
-                uuid2ign.set(member.uuid.replace(/-/g, ''), member.name || member.uuid);
-            }
-            const allStored = GEXPDB.all() as Record<string, { lifetime: number }>;
+            // lifetime — use stored ign from DB, then playerCache, then uuid
+            const allStored = GEXPDB.all() as Record<string, { lifetime: number; ign?: string }>;
+            const guildUuids = new Set(guild.members.map((m: any) => m.uuid.replace(/-/g, '')));
+
             for (const [uuid, data] of Object.entries(allStored)) {
-                const ign = uuid2ign.get(uuid);
-                if (ign && data?.lifetime != null) {
-                    members.push({ ign, value: data.lifetime });
-                }
+                if (!guildUuids.has(uuid)) continue; // skip ex-members
+                if (data?.lifetime == null) continue;
+                const cached = playerCache.getOldest(uuid);
+                const ign = cached?.displayname || data.ign || uuid;
+                members.push({ ign, value: data.lifetime });
             }
-            // Fill in any member not yet in DB
-            for (const [uuid, ign] of uuid2ign.entries()) {
-                if (!allStored[uuid]) members.push({ ign, value: 0 });
+            // Fill in guild members not yet in DB
+            for (const member of guild.members) {
+                const uuid = member.uuid.replace(/-/g, '');
+                if (!allStored[uuid]) {
+                    const cached = playerCache.getOldest(uuid);
+                    const ign = cached?.displayname || uuid;
+                    members.push({ ign, value: 0 });
+                }
             }
         }
 

@@ -1,5 +1,6 @@
 import { GEXPDB } from './database';
 import { getGuild } from './hypixel';
+import { playerCache } from './cache';
 import config from './config';
 
 export async function trackLifetimeGEXP() {
@@ -12,12 +13,16 @@ export async function trackLifetimeGEXP() {
             const uuid = member.uuid.replace(/-/g, '');
             const history = (member.expHistory || {}) as { [key: string]: number };
 
+            // Try to resolve IGN from cache (populated by role sync, no extra API call)
+            const cachedPlayer = playerCache.getOldest(uuid);
+            const ign: string | undefined = cachedPlayer?.displayname;
+
             // Get today's exp (last entry in the history object usually)
             const dates = Object.keys(history).sort();
             const todayKey = dates[dates.length - 1]; // most recent date
             const todayExp = history[todayKey] || 0;
 
-            let stored = GEXPDB.get(uuid, { lifetime: 0, lastToday: 0, lastDate: "" });
+            let stored = GEXPDB.get(uuid, { lifetime: 0, lastToday: 0, lastDate: '', ign: '' });
 
             // If we have no data at all, initialize lifetime with the current 7-day total
             // This gives the user immediate results rather than starting from 0.
@@ -29,13 +34,8 @@ export async function trackLifetimeGEXP() {
             } else {
                 // Determine delta
                 if (todayKey !== stored.lastDate) {
-                    // Day changed! 
-                    // 1. Add whatever was left from the last seen day (if anything)
-                    // Actually, Hypixel resets counts at midnight, so just adding todayExp is safer
-                    // since we might have double-counted if we try to guess leftovers.
                     stored.lifetime += todayExp;
                 } else {
-                    // Same day, add only the increase
                     const delta = Math.max(0, todayExp - stored.lastToday);
                     stored.lifetime += delta;
                 }
@@ -47,7 +47,8 @@ export async function trackLifetimeGEXP() {
                 lifetime: stored.lifetime,
                 lastToday: stored.lastToday,
                 lastDate: stored.lastDate,
-                lastUpdate: Date.now()
+                lastUpdate: Date.now(),
+                ign: ign || stored.ign || uuid // Keep best available name
             });
         }
         console.log(`Updated lifetime GEXP for ${members.length} members.`);
