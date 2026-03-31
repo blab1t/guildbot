@@ -27,6 +27,22 @@ export class MinecraftClient extends EventEmitter {
         }
 
         this.initBot();
+        this.startWatchdog();
+    }
+
+    private startWatchdog() {
+        setInterval(() => {
+            try {
+                const client = (this.bot as any)?._client;
+                const isConnected = this.bot && client && client.state === 'play';
+                if (!isConnected && !this.isReconnecting) {
+                    console.warn('[Watchdog] Bot is not in play state — triggering forceReconnect.');
+                    this.forceReconnect();
+                }
+            } catch (e) {
+                console.error('[Watchdog] Error during health check:', e);
+            }
+        }, 60_000); // Every 60 seconds
     }
 
     private isReconnecting: boolean = false;

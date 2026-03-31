@@ -12,6 +12,7 @@ import { roleSyncCommand } from './commands/rolesync';
 import { banCommand } from './commands/ban';
 import { reconnectCommand } from './commands/reconnect';
 import { statusCommand } from './commands/status';
+import { leaderboardCommand } from './commands/leaderboard';
 
 const commands = [
     verifyCommand,
@@ -23,6 +24,7 @@ const commands = [
     banCommand,
     reconnectCommand,
     statusCommand,
+    leaderboardCommand,
     ...adminCommands
 ];
 
