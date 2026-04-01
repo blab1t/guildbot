@@ -8,7 +8,7 @@ import {
     ButtonStyle,
     ComponentType
 } from 'discord.js';
-import { getGuild } from '../../utils/hypixel';
+import { getGuild, getPlayer } from '../../utils/hypixel';
 import { GEXPDB, getPlayerName } from '../../utils/database';
 import { playerCache } from '../../utils/cache';
 import config from '../../utils/config';
@@ -82,36 +82,64 @@ export const leaderboardCommand = {
             return;
         }
 
+        // Resolve all guild member IGNs — use cache/DB first, fetch from API for unknowns
+        const ignMap = new Map<string, string>();
+        const toFetch: string[] = [];
+
+        for (const member of guild.members) {
+            const uuid = member.uuid.replace(/-/g, '');
+            const known = playerCache.getOldest(uuid)?.displayname || getPlayerName(uuid);
+            if (known) {
+                ignMap.set(uuid, known);
+            } else {
+                toFetch.push(uuid);
+            }
+        }
+
+        // Fetch unknowns in small batches to avoid rate limits
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < toFetch.length; i += BATCH_SIZE) {
+            const batch = toFetch.slice(i, i + BATCH_SIZE);
+            await Promise.all(batch.map(async (uuid) => {
+                try {
+                    const player = await getPlayer(uuid);
+                    if (player?.displayname) ignMap.set(uuid, player.displayname);
+                    else ignMap.set(uuid, uuid);
+                } catch {
+                    ignMap.set(uuid, uuid);
+                }
+            }));
+            if (i + BATCH_SIZE < toFetch.length) {
+                await new Promise(r => setTimeout(r, 300)); // small delay between batches
+            }
+        }
+
         const members: { ign: string; value: number }[] = [];
 
         if (sub === 'weekly') {
             for (const member of guild.members) {
                 const uuid = member.uuid.replace(/-/g, '');
-                const cached = playerCache.getOldest(uuid);
-                const ign = cached?.displayname || getPlayerName(uuid) || uuid;
+                const ign = ignMap.get(uuid) || uuid;
                 const weekly = Object.values(member.expHistory || {})
                     .reduce((a: number, b: any) => a + (Number(b) || 0), 0);
                 members.push({ ign, value: weekly });
             }
         } else {
-            // lifetime — playerCache → PlayerNamesDB → GEXPDB.ign → uuid
+            // lifetime
             const allStored = GEXPDB.all() as Record<string, { lifetime: number; ign?: string }>;
             const guildUuids = new Set(guild.members.map((m: any) => m.uuid.replace(/-/g, '')));
 
             for (const [uuid, data] of Object.entries(allStored)) {
                 if (!guildUuids.has(uuid)) continue;
                 if (data?.lifetime == null) continue;
-                const cached = playerCache.getOldest(uuid);
-                const ign = cached?.displayname || getPlayerName(uuid) || data.ign || uuid;
+                const ign = ignMap.get(uuid) || data.ign || uuid;
                 members.push({ ign, value: data.lifetime });
             }
-            // Fill in guild members not yet in DB
+            // Fill in guild members not yet tracked
             for (const member of guild.members) {
                 const uuid = member.uuid.replace(/-/g, '');
                 if (!allStored[uuid]) {
-                    const cached = playerCache.getOldest(uuid);
-                    const ign = cached?.displayname || getPlayerName(uuid) || uuid;
-                    members.push({ ign, value: 0 });
+                    members.push({ ign: ignMap.get(uuid) || uuid, value: 0 });
                 }
             }
         }
