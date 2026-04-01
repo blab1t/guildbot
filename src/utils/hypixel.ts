@@ -1,6 +1,7 @@
 import axios from 'axios';
 import config from './config';
 import { playerCache, guildCache } from './cache';
+import { PlayerNamesDB } from './database';
 const API_KEY = config.hypixel_key;
 const BLABIT_KEY = config.blabit_key;
 
@@ -39,12 +40,15 @@ export async function getPlayer(uuid: string): Promise<any> {
     try {
         const response = await axios.get(`https://api.blabit.dev/refresh/player?key=${BLABIT_KEY}&uuid=${uuid}`, { timeout: 5000 });
         if (response.data.success && response.data.player) {
-            playerCache.set(uuid, response.data.player);
+            const player = response.data.player;
+            playerCache.set(uuid, player);
 
-            // Forward data to external API (fire-and-forget)
-            // forwardPlayerData(response.data.player);
+            // Persist IGN so leaderboards always have names even after restart
+            if (player.displayname) {
+                PlayerNamesDB.set(uuid, player.displayname);
+            }
 
-            return response.data.player;
+            return player;
         }
         return null;
     } catch (e: any) {

@@ -64,3 +64,10 @@ export const StatsDB = new Database('stats.json');
 export const PermsDB = new Database('perms.json');
 export const GEXPDB = new Database('gexp.json');
 export const BlacklistDB = new Database('blacklist.json');
+// Persistent UUID → IGN map; updated on every successful getPlayer() call
+export const PlayerNamesDB = new Database('playernames.json');
+
+/** Returns the best known IGN for a UUID (persistent across restarts). */
+export function getPlayerName(uuid: string): string | null {
+    return PlayerNamesDB.get(uuid, null);
+}

@@ -9,7 +9,7 @@ import {
     ComponentType
 } from 'discord.js';
 import { getGuild } from '../../utils/hypixel';
-import { GEXPDB } from '../../utils/database';
+import { GEXPDB, getPlayerName } from '../../utils/database';
 import { playerCache } from '../../utils/cache';
 import config from '../../utils/config';
 
@@ -88,21 +88,21 @@ export const leaderboardCommand = {
             for (const member of guild.members) {
                 const uuid = member.uuid.replace(/-/g, '');
                 const cached = playerCache.getOldest(uuid);
-                const ign = cached?.displayname || uuid;
+                const ign = cached?.displayname || getPlayerName(uuid) || uuid;
                 const weekly = Object.values(member.expHistory || {})
                     .reduce((a: number, b: any) => a + (Number(b) || 0), 0);
                 members.push({ ign, value: weekly });
             }
         } else {
-            // lifetime — use stored ign from DB, then playerCache, then uuid
+            // lifetime — playerCache → PlayerNamesDB → GEXPDB.ign → uuid
             const allStored = GEXPDB.all() as Record<string, { lifetime: number; ign?: string }>;
             const guildUuids = new Set(guild.members.map((m: any) => m.uuid.replace(/-/g, '')));
 
             for (const [uuid, data] of Object.entries(allStored)) {
-                if (!guildUuids.has(uuid)) continue; // skip ex-members
+                if (!guildUuids.has(uuid)) continue;
                 if (data?.lifetime == null) continue;
                 const cached = playerCache.getOldest(uuid);
-                const ign = cached?.displayname || data.ign || uuid;
+                const ign = cached?.displayname || getPlayerName(uuid) || data.ign || uuid;
                 members.push({ ign, value: data.lifetime });
             }
             // Fill in guild members not yet in DB
@@ -110,7 +110,7 @@ export const leaderboardCommand = {
                 const uuid = member.uuid.replace(/-/g, '');
                 if (!allStored[uuid]) {
                     const cached = playerCache.getOldest(uuid);
-                    const ign = cached?.displayname || uuid;
+                    const ign = cached?.displayname || getPlayerName(uuid) || uuid;
                     members.push({ ign, value: 0 });
                 }
             }
