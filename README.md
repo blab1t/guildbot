@@ -6,19 +6,6 @@ Built to run multiple guilds simultaneously on a single host via PM2.
 
 ---
 
-## Screenshots
-
-
-| Guild chat bridge | Stats commands |
-|---|---|
-| ![Guild chat bridged to Discord](docs/screenshots/bridge.png) | ![In-game stats command](docs/screenshots/stats.png) |
-
-| Verification flow | Leaderboards |
-|---|---|
-| ![/verify slash command](docs/screenshots/verify.png) | ![GEXP leaderboard](docs/screenshots/leaderboard.png) |
-
----
-
 ## Features
 
 ### Chat Bridge
